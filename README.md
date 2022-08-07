@@ -24,7 +24,7 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Kong API Gateway to proxy request to NestJS Backend
 
 ## Installation
 
@@ -56,6 +56,122 @@ $ npm run test:e2e
 
 # test coverage
 $ npm run test:cov
+```
+
+## Install Kong in Docker
+
+```
+$ git clone https://github.com/Kong/docker-kong
+$ cd compose/
+$ KONG_DATABASE=postgres docker-compose --profile database up
+```
+
+## Kong Admin APIs
+
+```bash
+# Create service
+
+curl -i -X POST \
+  --url http://localhost:8001/services/ \
+  --data 'name=example-service' \
+  --data 'url=http://<machine''s ip>:3000'
+
+
+curl -i -X GET --url http://localhost:8001/services/
+
+curl -i -X GET --url http://localhost:8001/services/2a13f17f-836e-4a72-9569-4d7fa7bbc3d3
+
+curl -i -X DELETE --url http://localhost:8001/services/5cd27390-db07-4928-be02-a4ad0cfa1786
+
+curl -i -X PATCH \
+  --url http://localhost:8001/services/2a13f17f-836e-4a72-9569-4d7fa7bbc3d3 \
+  --data 'url=http://<machine''s ip>:3000'
+
+# Create route
+curl -i -X POST \
+  --url http://localhost:8001/services/example-service/routes \
+  --data 'hosts[]=example.com'
+
+curl -i -X GET --url http://localhost:8001/routes
+
+curl -i -X DELETE --url http://localhost:8001/routes/00134e96-0287-4644-b2ad-f43ee61abae0
+
+curl -i -X PATCH \
+  --url http://localhost:8001/services/2a13f17f-836e-4a72-9569-4d7fa7bbc3d3/routes/b130fd49-66a2-4cf6-a805-8fe03618123b \
+  --data 'paths[]=/'
+
+# Forward request
+curl -i -X GET \
+  --url http://localhost:8000/ \
+  --header 'Host: example.com'
+
+curl -i -X GET \
+  --url http://127.0.0.1:8000/v1/foo/xxyyzzz \
+  --header 'Host: example.com'
+
+curl -i -X GET \
+  --url http://127.0.0.1:8000/v2/foo/xxyyzzz \
+  --header 'Host: example.com'
+
+curl -i -X GET \
+  --url http://localhost:8000/bar \
+  --header 'Host: example.com'
+
+-- Script to find my machine''s IP
+ip -4 -o a | cut -d ' '  -f 2,7 | cut -d '/' -f 1
+
+
+Create plugins
+
+
+Key authentication plugin
+
+curl -i -X POST \
+  --url http://localhost:8001/services/example-service/plugins/ \
+  --data 'name=key-auth'
+
+
+curl -i -X POST \
+  --url http://localhost:8001/consumers/ \
+  --data "username=Jason"
+
+curl -i -X POST \
+  --url http://localhost:8001/consumers/Jason/key-auth/ \
+  --data 'key=secret'
+
+
+  curl -i -X GET \
+  --url http://localhost:8000 \
+  --header "Host: example.com" \
+  --header "apikey: secret"
+
+  curl -i -X GET \
+  --url http://localhost:8000/v2/foo/xxx \
+  --header "Host: example.com" \
+  --header "apikey: secret"
+
+
+  curl -i -X GET \
+  --url http://localhost:8000/bar \
+  --header "Host: example.com" \
+  --header "apikey: secret"
+
+
+Rate limiting plugin
+
+curl -X POST http://localhost:8001/services/example-service/plugins \
+    --data "name=rate-limiting"  \
+    --data "config.second=5" \
+    --data "config.minute=100" \
+    --data "config.hour=10000" \
+    --data "config.policy=local"
+
+
+curl -X GET http://localhost:8001/plugins
+
+curl -X PATCH http://localhost:8001/plugins/a4033f18-133c-479d-ae40-afdb01d9cbe6  \
+  --data "config.minute=100"
+
 ```
 
 ## Support
